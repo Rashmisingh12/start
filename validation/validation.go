@@ -6,7 +6,7 @@ import (
 )
 
 var rxEmail = regexp.MustCompile(`^[A-Z]{20}.[a-z]{20}$`)
-var first_name=regexp.MustCompile(`^[A-Z]{20}.[a-z]{20}$`)
+var first_name=regexp.MustCompile(`^[A-Z]{20}"Project1/database".[a-z]{20}$`)
 var password=regexp.MustCompile(`^[A-Z]{20}.[a-z]{20}$`)
 
 type message struct{

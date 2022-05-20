@@ -86,34 +86,35 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 
 func Insert(w http.ResponseWriter, r *http.Request) {
 	Db := database.GetDB()
+	w.Header().Set("Context-Type", "application/x-www-form-urlencoded")
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Access-Control-Allow-Methods", "POST")
+    w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	if r.Method == "POST" {
-		user_id := r.FormValue("userid")
-		first_name := r.FormValue("fname")
-		last_name := r.FormValue("lname")
-		email := r.FormValue("email")
-		password := r.FormValue("password")
-		dob := r.FormValue("dob")
+    var user User
+    
+		ID, _ := strconv.Atoi(user.ID)
 
-		ID, _ := strconv.Atoi(user_id)
-
-		DOB, _ := time.Parse("2006-01-02", dob)
-		bs, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+		DOB, _ := time.Parse("2006-01-02",strconv.Itoa(user.Dob))
+		bs, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MinCost)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		query := fmt.Sprintf(`INSERT INTO Users(user_id,first_name,last_name,email,password,dob,created_at,archived) VALUES(%d,"%s","%s","%s","%s","%v","%v","%v")`, ID, first_name, last_name, email, string(bs), DOB.Format("2006-01-02"), time.Now(), false)
+		query := fmt.Sprintf(`INSERT INTO Users(user_id,first_name,last_name,email,password,dob,created_at,archived) VALUES(%d,"%s","%s","%s","%s","%v","%v","%d")`, ID, user.Firstname, user.Lastname,user.Email, string(bs), DOB.Format("2006-01-02"), time.Now(), 0)
 		_, err = Db.Exec(query)
 		if err != nil {
 			log.Println(err)
 			Logger.CommonLog.Println("Server is running")
 
 		}
+		json.NewDecoder(r.Body).Decode(&user)
+
+		
 
 	}
 
-}
+
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	Db := database.GetDB()
@@ -184,16 +185,18 @@ func Search(w http.ResponseWriter, req *http.Request) {
 	Query := getQuery(req)
 	fmt.Println("line 185")
 
+	fmt.Println(Query)
 	row, err := Db.Query(Query)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("line 189")
+	
+	
 
 	for row.Next() {
 		var res1 Users
-		fmt.Println("nisha")
+		
 		row.Scan(&res1.ID, &res1.Firstname, &res1.Lastname, &res1.Email, &res1.Dob)
 		user = append(user, res1)
 	}
@@ -213,9 +216,9 @@ func getQuery(req *http.Request) string {
 	page := req.URL.Query().Get("page")
 	items := req.URL.Query().Get("items")
 
-	query := "select user_id,first_name,last_name,email,dob from Users where archived=false"
+	query := "select user_id,first_name,last_name,email,dob from Users"
 	if archived == "true" {
-		query = "select user_id,first_name,last_name,email,dob from Users where archived=true"
+		query = "select user_id,first_name,last_name,email,dob from Users"
 	}
 	if id != "" {
 		query += " and user_id=" + id
@@ -224,7 +227,7 @@ func getQuery(req *http.Request) string {
 		query += ` and first_name like '%` +name+ `%' or last_name like '%` + name+ `%'`
 	}
 	if email != "" {
-		query += ` and email like '%' +email+ '%'`
+		query += ` and email like '%` +email+ `'%'`
 	}
 	if sortby != "" {
 		if order != "" {
